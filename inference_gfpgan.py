@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--aligned', action='store_true')
     parser.add_argument('--paste_back', action='store_false')
     parser.add_argument('--save_root', type=str, default='results')
+    parser.add_argument('--in-place', action='store_true')
     parser.add_argument(
         '--ext',
         type=str,
@@ -34,7 +35,8 @@ def main():
 
     if args.test_path.endswith('/'):
         args.test_path = args.test_path[:-1]
-    os.makedirs(args.save_root, exist_ok=True)
+    if not args.in_place:
+        os.makedirs(args.save_root, exist_ok=True)
 
     # background upsampler
     if args.bg_upsampler == 'realesrgan':
@@ -74,35 +76,38 @@ def main():
             cropped_faces, restored_faces, restored_img = restorer.enhance(
                 input_img, has_aligned=args.aligned, only_center_face=args.only_center_face, paste_back=args.paste_back)
 
-            # save faces
-            for idx, (cropped_face, restored_face) in enumerate(zip(cropped_faces, restored_faces)):
-                # save cropped face
-                save_crop_path = os.path.join(args.save_root, 'cropped_faces', f'{basename}_{idx:02d}.png')
-                imwrite(cropped_face, save_crop_path)
-                # save restored face
-                if args.suffix is not None:
-                    save_face_name = f'{basename}_{idx:02d}_{args.suffix}.png'
-                else:
-                    save_face_name = f'{basename}_{idx:02d}.png'
-                save_restore_path = os.path.join(args.save_root, 'restored_faces', save_face_name)
-                imwrite(restored_face, save_restore_path)
-                # save cmp image
-                cmp_img = np.concatenate((cropped_face, restored_face), axis=1)
-                imwrite(cmp_img, os.path.join(args.save_root, 'cmp', f'{basename}_{idx:02d}.png'))
+            if not args.in_place:
+                # save faces
+                for idx, (cropped_face, restored_face) in enumerate(zip(cropped_faces, restored_faces)):
+                    # save cropped face
+                    save_crop_path = os.path.join(args.save_root, 'cropped_faces', f'{basename}_{idx:02d}.png')
+                    imwrite(cropped_face, save_crop_path)
+                    # save restored face
+                    if args.suffix is not None:
+                        save_face_name = f'{basename}_{idx:02d}_{args.suffix}.png'
+                    else:
+                        save_face_name = f'{basename}_{idx:02d}.png'
+                    save_restore_path = os.path.join(args.save_root, 'restored_faces', save_face_name)
+                    imwrite(restored_face, save_restore_path)
+                    # save cmp image
+                    cmp_img = np.concatenate((cropped_face, restored_face), axis=1)
+                    imwrite(cmp_img, os.path.join(args.save_root, 'cmp', f'{basename}_{idx:02d}.png'))
 
-            # save restored img
-            if restored_img is not None:
-                if args.ext == 'auto':
-                    extension = ext[1:]
-                else:
-                    extension = args.ext
+                # save restored img
+                if restored_img is not None:
+                    if args.ext == 'auto':
+                        extension = ext[1:]
+                    else:
+                        extension = args.ext
 
-                if args.suffix is not None:
-                    save_restore_path = os.path.join(args.save_root, 'restored_imgs',
-                                                     f'{basename}_{args.suffix}.{extension}')
-                else:
-                    save_restore_path = os.path.join(args.save_root, 'restored_imgs', f'{basename}.{extension}')
-                imwrite(restored_img, save_restore_path)
+                    if args.suffix is not None:
+                        save_restore_path = os.path.join(args.save_root, 'restored_imgs',
+                                                         f'{basename}_{args.suffix}.{extension}')
+                    else:
+                        save_restore_path = os.path.join(args.save_root, 'restored_imgs', f'{basename}.{extension}')
+                    imwrite(restored_img, save_restore_path)
+            else:
+                imwrite(restored_img, img_path)
 
         print(f'Results are in the [{args.save_root}] folder.')
 
