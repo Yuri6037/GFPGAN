@@ -6,8 +6,6 @@ tb_logger/*
 wandb/*
 tmp/*
 
-version.py
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
